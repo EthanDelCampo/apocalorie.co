@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<link rel="icon" type="image/png" href="/icon.png" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>apocalorie.co</title>
+
+	<!-- ✅ ADD FONT LINK HERE -->
+	<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+	<!-- TailwindCSS -->
+	<script src="https://cdn.tailwindcss.com"></script>
+
+	<!-- Your App Styles -->
+	<link href="/src/App.css" rel="stylesheet">
+
+</head>
+
+<body>
+	<div id="root"></div>
+	<script type="module" src="/src/main.jsx"></script>
+</body>
+
+<script>
+	tailwind.config = {
+		theme: {
+			extend: {
+				animation: {
+					fade: 'fadeIn 1s ease-out',
+				},
+				keyframes: {
+					fadeIn: {
+						'0%': { opacity: '0', transform: 'translateY(20px)' },
+						'100%': { opacity: '1', transform: 'translateY(0)' },
+					},
+				},
+			}
+		}
+	}
+</script>
+
+
+</html>
