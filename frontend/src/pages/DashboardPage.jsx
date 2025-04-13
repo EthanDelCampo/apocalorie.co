@@ -9,6 +9,7 @@ const DashboardPage = () => {
   const [caloricIntake, setCaloricIntake] = useState(null);
   const [inventoryCalories, setInventoryCalories] = useState(0);
   const [foragingRecommendations, setForagingRecommendations] = useState('');
+  const [location, setLocation] = useState('');
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center p-6">
@@ -28,6 +29,7 @@ const DashboardPage = () => {
             setHasSubmitted={setHasSubmitted}
             setCaloricIntake={setCaloricIntake}
             setForagingRecommendations={setForagingRecommendations}
+            setLocation={setLocation}
           />
         </div>
 
@@ -39,19 +41,20 @@ const DashboardPage = () => {
                 caloricIntake={caloricIntake} 
                 inventoryCalories={inventoryCalories}
               />
-			</div>
-			{foragingRecommendations && (
-              <div className="w-full max-w-xl p-6 bg-[#1a1a1a] rounded-lg border border-[#8B4513] fade-in-card">
-                <h2 className="text-2xl font-bold text-[#FFA500] mb-6">Survival Food Recommendations</h2>
-                <p className="text-gray-300 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: foragingRecommendations }} />
-              </div>
-            )}
+            </div>
+            
             <div className="w-full max-w-xl">
               <FoodInventory onCaloriesChange={setInventoryCalories} />
             </div>
             <div className="w-full max-w-xl">
-              <MapPlaceholder />
-            </div>		  
+              <MapPlaceholder location={location} />
+            </div>
+            {foragingRecommendations && (
+              <div className="w-full max-w-xl p-6 bg-[#1a1a1a] rounded-lg border border-[#8B4513] fade-in-card">
+                <h2 className="text-2xl font-bold text-[#FFA500] mb-6">Survival Food Recommendations</h2>
+                <p className="text-gray-300 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: foragingRecommendations }} />
+              </div>
+            )} 
           </div>
         )}
       </div>

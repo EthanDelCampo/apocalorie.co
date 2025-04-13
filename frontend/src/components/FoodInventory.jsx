@@ -6,6 +6,9 @@ const FoodInventory = ({ onCaloriesChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const suggestionsRef = React.useRef(null);
 
   // Load saved inventory from cookies
   useEffect(() => {
@@ -50,6 +53,8 @@ const FoodInventory = ({ onCaloriesChange }) => {
 
       const data = await response.json();
       setSearchResults(data.results || []);
+      setShowSuggestions(true);
+      setSuggestions(data.results || []);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -57,10 +62,11 @@ const FoodInventory = ({ onCaloriesChange }) => {
     }
   };
 
-  const addToInventory = (food) => {
-    setInventory(prev => [...prev, { ...food, quantity: 1 }]);
+  const addToInventory = (entry) => {
+    setInventory(prev => [...prev, { entry, quantity: 1 }]);
     setSearchQuery('');
     setSearchResults([]);
+    setShowSuggestions(false);
   };
 
   const updateQuantity = (index, newQuantity) => {
@@ -78,14 +84,14 @@ const FoodInventory = ({ onCaloriesChange }) => {
 
   const calculateTotalCalories = () => {
     return inventory.reduce((total, item) => {
-      const calories = parseFloat(item.calories_kcal_per_item);
+      const calories = parseFloat(item.entry.labelNutrients?.calories?.value || 100);
       const quantity = parseInt(item.quantity);
       return total + (calories * quantity);
     }, 0);
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-[#1a1a1a] rounded-lg border border-[#8B4513] shadow-lg fade-in-card">
+    <div className="relative max-w-4xl mx-auto p-6 bg-[#1a1a1a] rounded-lg border border-[#8B4513] shadow-lg fade-in-card">
       <h2 className="text-2xl font-bold text-[#FFA500] mb-6">Food Inventory</h2>
 
       {/* Inventory List */}
@@ -94,10 +100,15 @@ const FoodInventory = ({ onCaloriesChange }) => {
           <div key={index} className="p-4 bg-[#2b2b14] border border-[#8B4513] rounded-md">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-[#FFA500] font-semibold">{item.food}</h3>
+                <h3 className="text-[#FFA500] font-semibold">{item.entry.brandedFoodCategory || item.entry.description}</h3>
                 <p className="text-gray-300">
-                  Calories: {item.calories_kcal_per_item} per unit
+                  Calories: {item.entry.labelNutrients?.calories?.value || 100} per serving
                 </p>
+                {item.entry.description && (
+                  <p className="text-gray-400 text-sm mt-1">
+                    {item.entry.description}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -123,15 +134,42 @@ const FoodInventory = ({ onCaloriesChange }) => {
       </div>
 
       {/* Search Section */}
-      <div className="relative mb-8">
+      <div className={`relative w-full mb-8 transition-all duration-300 ${showSuggestions && searchResults.length > 0 ? 'min-h-[280px]' : 'min-h-[80px]'}`}>
         <form onSubmit={handleSearch} className="flex gap-4">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for food..."
-            className="flex-1 px-4 py-2 bg-[#2a2a2a] border border-[#8B4513] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFA500]"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for food..."
+              className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#8B4513] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFA500]"
+            />
+            {/* Search Results */}
+            {showSuggestions && searchResults.length > 0 && (
+              <div 
+                ref={suggestionsRef}
+                className="absolute left-0 right-0 top-full mt-1 bg-[#1a1a1a] border border-[#8B4513] rounded-md shadow-lg z-[100] max-h-[240px] overflow-y-auto"
+              >
+                {searchResults.map((result, index) => (
+                  <div
+                    key={index}
+                    className="p-4 hover:bg-[#3a3a2a] cursor-pointer text-white"
+                    onClick={() => addToInventory(result.entry)}
+                  >
+                    <h3 className="text-[#FFA500] font-semibold">{result.entry.brandedFoodCategory || result.entry.description}</h3>
+                    <p className="text-gray-300 text-sm">
+                      Calories: {result.entry.labelNutrients?.calories?.value || 100} per serving
+                    </p>
+                    {result.entry.description && (
+                      <p className="text-gray-400 text-xs mt-1">
+                        {result.entry.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="submit"
             disabled={isSearching}
@@ -140,22 +178,6 @@ const FoodInventory = ({ onCaloriesChange }) => {
             {isSearching ? 'Searching...' : 'Search'}
           </button>
         </form>
-
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div className="absolute top-full mt-2 w-full bg-[#1a1a1a] border border-[#8B4513] rounded-md shadow-lg z-10 max-h-60 overflow-y-auto fade-in">
-            {searchResults.map((food, index) => (
-              <div
-                key={index}
-                className="p-4 hover:bg-[#3a3a2a] cursor-pointer text-white"
-                onClick={() => addToInventory(food)}
-              >
-                <h3 className="text-[#FFA500] font-semibold">{food.food}</h3>
-                <p className="text-gray-300 text-sm">Calories: {food.calories_kcal_per_item}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

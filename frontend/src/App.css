@@ -285,3 +285,44 @@ body::after {
 		transform: translateY(0) scale(1);
 	}
 }
+
+.custom-prose h2 {
+	color: #FFA500;
+	/* Make h2 headers orange */
+	font-size: 1.875rem;
+	/* text-2xl */
+	font-weight: bold;
+	/* Extra boldness */
+	margin-top: 1rem;
+	/* Space above h2 */
+	margin-bottom: 0.5rem;
+	/* Space below h2 */
+}
+
+.custom-prose ul {
+	color: #FFA500;
+	/* Orange bullets and text */
+	font-size: 1.125rem;
+	/* text-lg */
+	list-style-type: square;
+	/* Square bullets instead of round */
+	margin-left: 1.25rem;
+	/* Nice indent */
+	padding-left: 1rem;
+}
+
+.custom-prose li {
+	font-size: 1rem;
+	/* Normal readable list items */
+	line-height: 1.4;
+	/* Slightly tighter */
+	margin-bottom: 0.25rem;
+	/* Less huge gaps */
+}
+
+.custom-prose p {
+	line-height: 1.4;
+	/* Tighten paragraph spacing too */
+	margin-bottom: 0.5rem;
+	/* Less space between paragraphs */
+}

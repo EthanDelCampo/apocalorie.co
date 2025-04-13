@@ -7,7 +7,7 @@ import DevToggle from './DevToggle';
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
-const SurvivalProfile = ({ setHasSubmitted, setCaloricIntake, setForagingRecommendations }) => {
+const SurvivalProfile = ({ setHasSubmitted, setCaloricIntake, setForagingRecommendations, setLocation }) => {
   const [formData, setFormData] = useState({
     heightFeet: '',
     heightInches: '',
@@ -28,6 +28,7 @@ const SurvivalProfile = ({ setHasSubmitted, setCaloricIntake, setForagingRecomme
   const [inventoryCalories, setInventoryCalories] = useState(0);
   const [isGeminiEnabled, setIsGeminiEnabled] = useState(true);
   const [foragingRecommendations, setLocalForagingRecommendations] = useState(null);
+
 
   const calculateDaysOfFood = () => {
     if (caloricIntake <= 0 || inventoryCalories <= 0) return 0;
@@ -80,9 +81,23 @@ const SurvivalProfile = ({ setHasSubmitted, setCaloricIntake, setForagingRecomme
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = async (suggestion) => {
     setFormData({ ...formData, location: suggestion });
     setShowSuggestions(false);
+    setLocation(suggestion);
+  
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(suggestion)}.json?access_token=${mapboxgl.accessToken}`
+      );
+      const data = await response.json();
+      const [lng, lat] = data.features[0].center;
+  
+      // Store the coordinates in localStorage for the map to use
+      localStorage.setItem('initialMapPosition', JSON.stringify({ lng, lat }));
+    } catch (err) {
+      console.error("Failed to get coordinates:", err);
+    }
   };
 
   const handleChange = (e) => {
@@ -275,16 +290,35 @@ const SurvivalProfile = ({ setHasSubmitted, setCaloricIntake, setForagingRecomme
 
           {/* Location Section */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-[#FFA500]">Location</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleLocationChange}
-              placeholder="Enter your location"
-              className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#8B4513] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFA500]"
-              required
-            />
+            <label className="block text-sm font-medium text-gray-300">Location</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={formData.location}
+                onChange={handleLocationChange}
+                placeholder="Enter your location"
+                className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#8B4513] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFA500]"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full mt-1 w-full bg-[#1a1a1a] border border-[#8B4513] rounded-md shadow-lg z-10 max-h-48 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-[#3a3a2a] cursor-pointer text-white"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, location: suggestion }));
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Submit Button */}

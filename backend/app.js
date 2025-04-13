@@ -38,7 +38,7 @@ app.get('/api/health', (req, res) => {
 });
 
 /* Foods JSON file */
-const filePath = 'food.json';
+const filePath = 'selected_foods.json';
 const foodIndex = new Map();
 
 // Search endpoint for food inventory
@@ -50,74 +50,80 @@ app.post('/api/search', async (req, res) => {
 			return res.status(400).json({ error: 'Search term is required' });
 		}
 
+		// Check if file exists
+		if (!fs.existsSync(filePath)) {
+			console.error(`File not found: ${filePath}`);
+			return res.status(500).json({ error: 'Food database not available' });
+		}
+
 		const matches = [];
-		const maxMatches = 1000; // Limit to prevent memory issues
+		const maxMatches = 1000;
+		let errorCount = 0;
 
-		// Create read stream
-		const readStream = fs.createReadStream(filePath, { encoding: 'utf8' });
-		let buffer = '';
-		let isArrayStarted = false;
+		// Read the entire file
+		const fileContent = fs.readFileSync(filePath, 'utf8');
 
-		await new Promise((resolve, reject) => {
-			readStream
-				.on('data', (chunk) => {
-					buffer += chunk;
-					const lines = buffer.split('\n');
-					buffer = lines.pop() || ''; // Keep the last incomplete line
+		try {
+			// Parse the entire JSON array
+			const foodData = JSON.parse(fileContent);
 
-					for (const line of lines) {
-						if (!isArrayStarted) {
-							if (line.trim() === '[') {
-								isArrayStarted = true;
-							}
-							continue;
-						}
+			// Process each item in the BrandedFoods array
+			for (const entry of foodData.BrandedFoods) {
+				try {
+					// Check both descriptions array and description field
+					let hasMatch = false;
 
-						if (line.trim() === ']') {
-							resolve();
-							return;
-						}
+					if (entry.descriptions && Array.isArray(entry.descriptions)) {
+						hasMatch = entry.descriptions.some(desc =>
+							desc.toLowerCase().includes(searchTerm)
+						);
+					} else if (entry.description) {
+						hasMatch = entry.description.toLowerCase().includes(searchTerm);
+					}
 
-						try {
-							const entry = JSON.parse(line.trim().replace(/,$/, ''));
-							if (entry.food?.toLowerCase().includes(searchTerm)) {
-								matches.push(entry);
-								if (matches.length >= maxMatches) {
-									readStream.destroy();
-									resolve();
-									return;
-								}
-							}
-						} catch (e) {
-							// Skip invalid JSON lines
-							continue;
+					if (hasMatch) {
+						matches.push({
+							entry: entry
+						});
+
+						if (matches.length >= maxMatches) {
+							console.log('Reached max matches limit');
+							break;
 						}
 					}
-				})
-				.on('end', () => {
-					if (buffer) {
-						try {
-							const entry = JSON.parse(buffer.trim().replace(/,$/, ''));
-							if (entry.food?.toLowerCase().includes(searchTerm)) {
-								matches.push(entry);
-							}
-						} catch (e) {
-							// Skip invalid JSON
-						}
+				} catch (e) {
+					errorCount++;
+					if (errorCount % 100 === 0) {
+						console.error('Error processing entry:', e.message);
 					}
-					resolve();
-				})
-				.on('error', reject);
-		});
+					continue;
+				}
+			}
 
-		res.json({
-			results: matches,
-			count: matches.length,
-			truncated: matches.length >= maxMatches
-		});
+			console.log(`Search completed. Found ${matches.length} matches, encountered ${errorCount} errors`);
+
+			res.json({
+				results: matches,
+				count: matches.length,
+				truncated: matches.length >= maxMatches,
+				stats: {
+					totalEntries: foodData.BrandedFoods.length,
+					errorsEncountered: errorCount
+				}
+			});
+		} catch (parseError) {
+			console.error('Error parsing JSON file:', parseError);
+			res.status(500).json({
+				error: 'Failed to parse food database',
+				details: parseError.message
+			});
+		}
 	} catch (error) {
-		console.error('Error:', error);
-		res.status(500).json({ error: 'Failed to process file' });
+		console.error('Search endpoint error:', error);
+		res.status(500).json({
+			error: 'Failed to process search request',
+			details: error.message
+		});
 	}
 });
 
@@ -134,20 +140,23 @@ app.post('/api/formSubmit', async (req, res) => {
 			foragingPara: useGemini ? "Thinking..." : "Gemini API is disabled"
 		}));
 
-		// Generate Gemini response in the background
+		// If Gemini is enabled, generate recommendations in the background
 		if (useGemini) {
 			try {
-				const prompt = `Given a person with the following characteristics: ${height} inches, ${weight} lbs, ${sex}, ${activityLevel}, ${age}, ${location}.
-								Provide a concise set of bullet points offering realistic foraging strategies tailored to the user's location. 
-								Each main bullet should present a specific edible plant or natural resource commonly found in that region, formatted with the common name followed by its scientific name in brackets, if applicable. 
-								Under each main bullet, include sub-bullets that offer practical, actionable tips on how and where to forage for the item safely, including detailed descriptions of identifying features and warnings about toxic look-alikes. 
-								Use second-person perspective, avoid text styling (no italics, bolding, etc.), and do not repeat the user's location at the beginning of the response. 
-								Reference actual plant species, fungi, or typical foraging areas like city parks, coastlines, wooded trails, or urban lots. 
-								Avoid generic statements like 'look for berries' unless specifying types and locations. 
-								Ensure each tip is practical, accurate, and appropriate for the local terrain and climate. 
-								Emphasize the importance of accurate identification and caution users to avoid consuming any plant unless they are certain of its safety.​
-								
-								Output the response in valid html format so that formatting can be applied in the frontend. Only the inner lists should be unordered. Reduce spacing and remove the html tags from either side of the response. `
+				const prompt = `Given a person with the following characteristics: ${height} inches, ${weight} lbs, ${sex}, ${activityLevel}, ${age}, ${location}. 								
+                                Provide a list of edible plants or natural resources that users can forage for based on their location, formatted as follows:
+                                - First line: Food name, with common name and scientific name in parentheses followed by a colon, e.g., "Spanish Needles (Bidens alba): "						
+                                - Second line: A few sentences describing where to find it safely.
+                                - Third line: A few sentences explaining how to identify it.
+                                - Fourth line: A few sentences describing any important warnings about toxic look-alikes.
+								- Leave one blank line between the second, third, and fourth lines.
+                                - Then two blank lines before the next food.
+
+								Do NOT use any HTML or special formatting. Just plain text with one blank line between each item.
+
+								Keep it concise and factual. Avoid long essays. Second-person perspective ("you can find...").
+
+								DO NOT make it an essay, not too long please.`
 
 				const result = await model.generateContent(prompt);
 				const response = await result.response;
