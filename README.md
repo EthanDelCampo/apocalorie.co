@@ -72,17 +72,4 @@ Plus, we wanted to learn new technologies and just have fun building something c
 
 ---
 
-## 🔮 What's Next for apocalorie.co
-- Making AI recommendations even smarter by tailoring them to the user's exact location, environment, and available resources.
-- Integrating more APIs, such as a weather API, to provide real-time weather updates based on the user’s location — because surviving a sandstorm or freezing night could change everything.
-- Expanding the danger maps with live updates and more detailed survival information.
-
----
-
-## 🌍 Try It Out
-Check out [apocalorie.co](https://apocalorie.co)!
-
----
-
-
 
