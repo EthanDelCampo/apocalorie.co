@@ -1,6 +1,7 @@
 # apocalorie.co
 
-**apocalorie.co** is a survival web app built during **Hackabull 2025** hosted at the University of South Florida on April 12-13, 2025.
+**Apocalorie.co** is a survival web app built during **Hackabull 2025**, a 24-hour hackathon hosted at the University of South Florida (April 12–13, 2025).
+This project was developed collaboratively by our team. This fork exists to showcase my (@EthanDelCampo) individual contributions. The original repository is owned by @Renblas, my teammate during the event.
 
 In a post-apocalyptic world, food, calories, and danger zones are critical for survival.  
 Our app helps users calculate their daily calorie needs, recommends forageable foods based on their location, tracks their food inventory, and shows danger zones on an interactive map.
