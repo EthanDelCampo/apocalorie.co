@@ -1,6 +1,7 @@
 # apocalorie.co
 
-**apocalorie.co** is a survival web app built during our very first hackathon!  
+**apocalorie.co** is a survival web app built during **Hackabull 2025** hosted at the University of South Florida on April 12-13, 2025.
+
 In a post-apocalyptic world, food, calories, and danger zones are critical for survival.  
 Our app helps users calculate their daily calorie needs, recommends forageable foods based on their location, tracks their food inventory, and shows danger zones on an interactive map.
 
